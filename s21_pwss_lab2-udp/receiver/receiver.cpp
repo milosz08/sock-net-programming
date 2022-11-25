@@ -12,6 +12,7 @@ int main(int argc, char** argv)
 	receiveFile();
 
 	WSACleanup();
+	system("pause");
 	return 0;
 }
 
