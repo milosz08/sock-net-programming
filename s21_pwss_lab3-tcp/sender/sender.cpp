@@ -85,7 +85,8 @@ void sendFile()
 		}
 		frames++;
 	}
-	
+	fclose(fileHandler);
+
 	float elapseTime = float(clock() - begin_time) / CLOCKS_PER_SEC;
 
 	std::cout << "Wyslano " << frames << " ramek, kazda po " << FRAME_BUFF << " bajtow.\n";
