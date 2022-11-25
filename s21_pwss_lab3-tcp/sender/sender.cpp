@@ -39,7 +39,8 @@ void sendFile()
 		return;
 	}
 
-	if (connect(iResult, (sockaddr*)&receiverSa, sizeof(receiverSa)) < 0) {
+	if (connect(iResult, (sockaddr*)&receiverSa, sizeof(receiverSa)) < 0)
+	{
 		std::cerr << "Nieudane połączenie\n";
 		if (closesocket(iResult) != 0)
 		{

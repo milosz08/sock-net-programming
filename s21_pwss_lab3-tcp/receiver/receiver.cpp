@@ -42,7 +42,8 @@ void receiveFile()
 		return;
 	}
 
-	if ((iResult = listen(listenSocket, SOMAXCONN)) < 0) {
+	if ((iResult = listen(listenSocket, SOMAXCONN)) < 0)
+	{
 		std::cerr << "Nie potrafie sluchac. Sadeg.\n";
 		if (closesocket(iResult) != 0 || closesocket(listenSocket) != 0)
 		{
@@ -60,7 +61,8 @@ void receiveFile()
 	std::cout << "Odbiorca nasluchuje na plik...\n";
 	while (true)
 	{
-		if ((clientSocket = accept(listenSocket, NULL, NULL)) < 0) {
+		if ((clientSocket = accept(listenSocket, NULL, NULL)) < 0)
+		{
 			std::cerr << "Nie potrafie sie polaczyc. Sadeg.\n" << WSAGetLastError();
 			if (closesocket(iResult) != 0 || closesocket(listenSocket) != 0 || closesocket(clientSocket) != 0)
 			{
