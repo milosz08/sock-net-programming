@@ -52,31 +52,45 @@ void receiveFile()
 		return;
 	}
 
-	remove(FILE_NAME);
-	char buffer[FRAME_BUFF];
-
-	int singleFrameSize = 0;
-	FILE* fileHandler = fopen(FILE_NAME, "wb");
-
 	std::cout << "Odbiorca nasluchuje na plik...\n";
 	while (true)
 	{
-		if ((clientSocket = accept(listenSocket, NULL, NULL)) < 0)
+		sockaddr_in clientAddr;
+		int clientAddrLength = sizeof(clientAddr);
+		if ((clientSocket = accept(listenSocket, (sockaddr*)&clientAddr, &clientAddrLength)) < 0)
 		{
-			std::cerr << "Nie potrafie sie polaczyc. Sadeg.\n" << WSAGetLastError();
+			std::cerr << "Nie potrafie sie polaczyc. Sadeg.\n";
 			if (closesocket(iResult) != 0 || closesocket(listenSocket) != 0 || closesocket(clientSocket) != 0)
 			{
 				std::cerr << "Nieudane zamkniecie socketu.\n";
 			}
 			return;
 		}
+		
+		char clientIp[INET_ADDRSTRLEN];
+		if ((inet_ntop(AF_INET, &(((struct sockaddr_in*)&clientAddr)->sin_addr), clientIp, sizeof(clientIp)) == NULL))
+		{
+			std::cerr << "Nieudane odczytanie adresu IPv4 ze struktury sockaddr_in.\n";
+			return;
+		}
+
+		char fileName[INET_ADDRSTRLEN + sizeof(FILE_NAME) / sizeof(char) + 2];
+		strcpy(fileName, clientIp);
+		strcat(fileName, "__");
+		strcat(fileName, FILE_NAME);
+
+		remove(fileName);
+		char buffer[FRAME_BUFF];
+
+		int singleFrameSize = 0;
+		FILE* fileHandler = fopen(fileName, "wb");
 
 		while (true)
 		{
 			singleFrameSize = recv(clientSocket, buffer, FRAME_BUFF, 0);
 			if (singleFrameSize == 0)
 			{
-				std::cout << "Wyslano plik.\n";
+				std::cout << "Wyslano plik z klienta o adresie " << fileName << ".\n";
 				fclose(fileHandler);
 				break;
 			}
@@ -87,7 +101,7 @@ void receiveFile()
 				{
 					std::cerr << "Nieudane zamkniecie socketu.\n";
 				}
-				break;
+				continue;
 			}
 			fwrite(buffer, sizeof(char), singleFrameSize, fileHandler);
 		}
