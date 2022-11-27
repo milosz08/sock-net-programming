@@ -53,6 +53,10 @@ void receiveFile()
 	while (true)
 	{
 		singleFrameSize = recvfrom(sockfd, buffer, FRAME_BUFF, 0, (sockaddr*)&receiverSa, &receiverSaSize);
+		if (singleFrameSize == 0)
+		{
+			break;
+		}
 		if (singleFrameSize < 0)
 		{
 			std::cerr << "Nieudane odczytanie ramki pliku.\n";
