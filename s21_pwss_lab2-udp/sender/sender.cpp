@@ -22,13 +22,14 @@ void sendFile()
 {
 	// zainicjalizowanie struktury przechowującej dane połączenia dla odbierającego
 	struct sockaddr_in receiverSa;
-	int sockfd; // zmienna przechowująca deskryptor socketu
+	SOCKET sockDesc; // zmienna przechowująca deskryptor socketu
 
 	// wywołanie funkcji tworzącej socket typu UDP, jeśli się nie powiedzie, funkcja
 	// zwróci wartość -1 i zostanie wyświetlony error w konsoli
-	if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+	if ((sockDesc = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
 	{
 		std::cerr << "Nieudane utworzenie socketu.\n";
+		closesocket(sockDesc); // zamknięcie socketu
 		return;
 	}
 
@@ -39,6 +40,7 @@ void sendFile()
 	if (inet_pton(AF_INET, RECV_INET, &(receiverSa.sin_addr)) < 0)
 	{
 		std::cerr << "Podany adres: " << RECV_INET << " nie jest prawidlowym adresem IPv4.\n";
+		closesocket(sockDesc); // zamknięcie socketu
 		return;
 	}
 
@@ -47,6 +49,7 @@ void sendFile()
 	if (fileHandler == NULL)
 	{
 		std::cerr << "Nieudane otwarcie pliku " << FILE_NAME << ".\n";
+		closesocket(sockDesc); // zamknięcie socketu
 		return;
 	}
 
@@ -58,6 +61,7 @@ void sendFile()
 	// na podstawie bieżącej pozycji pobierz ilość bajtów pliku
 	int fileFullSize = ftell(fileHandler);
 	int frames = 0; // ilość wysłanych ramek
+	float totalElapsed = 0; // czas wysyłania danych
 
 	const clock_t begin_time = clock(); // rozpocznij odliczanie czasu
 
@@ -69,30 +73,28 @@ void sendFile()
 		// odczytaj jedną ramkę pliku i zwróć faktycznie odczytaną ilość bajtów
 		size_t singleFrameFileSize = fread(buffer, 1, FRAME_BUFF, fileHandler);
 
+		const clock_t begin_time = clock(); // rozpocznij odliczanie czasu
+
 		// uruchomienie funkcji do wysyłania ramki danych do odbierającego, jeśli zwróci -1, błąd
-		if (sendto(sockfd, buffer, singleFrameFileSize, 0, (sockaddr*)&receiverSa, sizeof(receiverSa)) < 0)
+		if (sendto(sockDesc, buffer, singleFrameFileSize, 0, (sockaddr*)&receiverSa, sizeof(receiverSa)) < 0)
 		{
 			std::cerr << "Nieudane wysłanie danych.\n";
-			if (closesocket(sockfd) != 0) // zamknięcie socketu
-			{
-				std::cerr << "Nieudane zamknięcie socketu.\n";
-			}
+			closesocket(sockDesc); // zamknięcie socketu
 			fclose(fileHandler); // zamknięcie pliku
 			return;
 		}
+
+		// zakończ odliczanie czasu i zsumuj
+		totalElapsed += float(clock() - begin_time) / CLOCKS_PER_SEC;
+
 		// Sleep(25); opóźnienie, które powoduje odebranie wszystkich ramek u odbiorcy
 		frames++; // inkrementuj liczbę wysłanych ramek
 	}
 	fclose(fileHandler); // zamknięcie pliku
 
-	float elapseTime = float(clock() - begin_time) / CLOCKS_PER_SEC; // oblicz czas wykonywania
-
 	std::cout << "Wyslano " << frames << " ramek, kazda po " << FRAME_BUFF << " bajtow.\n";
-	std::cout << "Czas wysylania pliku: " << elapseTime << " sek.\n";
+	std::cout << "Czas wysylania pliku: " << totalElapsed << " sek.\n";
 	std::cout << "Calkowity rozmiar pliku: " << fileFullSize << " bajtow.\n";
 
-	if (closesocket(sockfd) != 0) // zamknięcie socketu
-	{
-		std::cerr << "Nieudane zamkniecie socketu.\n";
-	}
+	closesocket(sockDesc); // zamknięcie socketu
 }

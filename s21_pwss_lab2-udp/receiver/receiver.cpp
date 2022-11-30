@@ -24,17 +24,14 @@ void receiveFile()
 	// odbierającego
 	struct sockaddr_in senderSa, receiverSa;
 	int receiverSaSize = sizeof(receiverSa); // wielkość struktury odbierającego
-	int sockfd; // zmienna przechowująca deskryptor socketu
+	SOCKET sockDesc; // zmienna przechowująca deskryptor socketu
 
 	// wywołanie funkcji tworzącej socket typu UDP, jeśli się nie powiedzie, funkcja
 	// zwróci wartość -1 i zostanie wyświetlony error w konsoli
-	if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+	if ((sockDesc = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
 	{
 		std::cerr << "Nieudane utworzenie socketu.\n";
-		if (closesocket(sockfd) != 0) // zamknięcie socketu
-		{
-			std::cerr << "Nieudane zamkniecie socketu.\n";
-		}
+		closesocket(sockDesc); // zamknięcie socketu
 		return;
 	}
 
@@ -46,13 +43,10 @@ void receiveFile()
 
 	// połączenie utworzonej struktury wysyłającego z socketem, jeśli się nie powiedzie funkcja
 	// zwróci wartość -1 i zostanie wyświetlony błąd
-	if (bind(sockfd, (struct sockaddr*)&senderSa, sizeof(senderSa)) < 0)
+	if (bind(sockDesc, (struct sockaddr*)&senderSa, sizeof(senderSa)) < 0)
 	{
 		std::cerr << "Nieudane polaczenie.\n";
-		if (closesocket(sockfd) != 0) // zamknięcie socketu
-		{
-			std::cerr << "Nieudane zamkniecie socketu.\n";
-		}
+		closesocket(sockDesc); // zamknięcie socketu
 		return;
 	}
 
@@ -67,10 +61,7 @@ void receiveFile()
 	if (fileHandler == NULL)
 	{
 		std::cerr << "Nieudane utworzenie pliku.\n";
-		if (closesocket(sockfd) != 0) // zamknięcie socketu
-		{
-			std::cerr << "Nieudane zamkniecie socketu.\n";
-		}
+		closesocket(sockDesc); // zamknięcie socketu
 		return;
 	}
 
@@ -79,7 +70,7 @@ void receiveFile()
 	{
 		// pobierz dane od wysyłającego (pojedyncza ramka, na podstawie rozmiaru bufora), w przypadku 
 		// zwrócenia -1, oznacza że nie udało się odczytać ramki
-		singleFrameSize = recvfrom(sockfd, buffer, FRAME_BUFF, 0, (sockaddr*)&receiverSa, &receiverSaSize);
+		singleFrameSize = recvfrom(sockDesc, buffer, FRAME_BUFF, 0, (sockaddr*)&receiverSa, &receiverSaSize);
 		if (singleFrameSize < 0) // jeśli błąd, wyświetl komunikat
 		{
 			std::cerr << "Nieudane odczytanie ramki pliku.\n";
@@ -91,9 +82,5 @@ void receiveFile()
 		}
 	}
 	fclose(fileHandler); // zamknięcie pliku
-
-	if (closesocket(sockfd) != 0) // zamknięcie socketu
-	{
-		std::cerr << "Nieudane zamkniecie socketu.\n";
-	}
+	closesocket(sockDesc); // zamknięcie socketu
 }
