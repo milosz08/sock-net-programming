@@ -63,8 +63,6 @@ void sendFile()
 	int frames = 0; // ilość wysłanych ramek
 	float totalElapsed = 0; // czas wysyłania danych
 
-	const clock_t begin_time = clock(); // rozpocznij odliczanie czasu
-
 	// pętla iterująca do momentu, kiedy prześle wszystkie bajty (ilość ramek * jej rozmiar)
 	while ((frames * FRAME_BUFF) < fileFullSize)
 	{
@@ -84,8 +82,8 @@ void sendFile()
 			return;
 		}
 
-		// zakończ odliczanie czasu i zsumuj
-		totalElapsed += float(clock() - begin_time) / CLOCKS_PER_SEC;
+		const clock_t end_time = clock(); // zakończ odliczanie czasu i zsumuj
+		totalElapsed += float(end_time - begin_time) / CLOCKS_PER_SEC;
 
 		// Sleep(25); opóźnienie, które powoduje odebranie wszystkich ramek u odbiorcy
 		frames++; // inkrementuj liczbę wysłanych ramek
