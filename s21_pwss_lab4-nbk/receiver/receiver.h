@@ -16,7 +16,7 @@
 
 const char* RECV_INET = "127.0.0.1"; // adres serwera
 // nazwa dobieranego pliku od klienta
-const char* FILE_NAME = "test.txt";
+const char* FILE_NAME = "sendedFile";
 
 #include <map>
 #include <string>
