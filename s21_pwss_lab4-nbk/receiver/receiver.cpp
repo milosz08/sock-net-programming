@@ -88,7 +88,7 @@ void receiveFile()
 			{
 				std::cerr << "Blad podczas polaczenia z klientem.\n";
 				closesocket(clientDesc); // zamknięcie socketu
-				break; // wyjście z głównej pętli serwera
+				continue; // w przypadku błędu, kontynuuj działanie serwera
 			}
 
 			char clientIp[INET_ADDRSTRLEN]; // adres IP klienta
@@ -97,7 +97,7 @@ void receiveFile()
 			{
 				std::cerr << "Nieudane odczytanie adresu IPv4 ze struktury sockaddr_in.\n";
 				closesocket(clientDesc);
-				break; // wyjście z głównej pętli serwera
+				continue; // w przypadku błędu, kontynuuj działanie serwera
 			}
 			std::cout << "Polaczono z klientem z IP " << clientIp << ". Nr deskryptora " << clientDesc << "\n";
 
@@ -110,7 +110,7 @@ void receiveFile()
 			{
 				std::cerr << "Nieudane otwarcie pliku " << finalFileName << ".\n";
 				closesocket(clientDesc);
-				break; // wyjście z głównej pętli serwera
+				continue; // w przypadku błędu, kontynuuj działanie serwera
 			}
 
 			fileClients.insert({ clientDesc, fileHandler }); // dodaj właściwość klient-plik do mapę
@@ -130,7 +130,7 @@ void receiveFile()
 				if (singleFrameSize < 0)
 				{
 					std::cerr << "Nieudane odczytanie ramki pliku.\n";
-					break; // wyjście z pętli odczytującej bajty pliku
+					continue; // w przypadku błędu, kontynuuj działanie serwera
 				}
 				// dopisz do pliku otrzymaną ramkę danych
 				fwrite(buffer, sizeof(char), singleFrameSize, fileClients.at(i->fd));
