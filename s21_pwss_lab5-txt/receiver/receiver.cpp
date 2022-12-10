@@ -88,7 +88,7 @@ void receiveFile()
 			{
 				std::cerr << "Blad podczas polaczenia z klientem.\n";
 				closesocket(clientDesc); // zamknięcie socketu
-				break; // wyjście z głównej pętli serwera
+				continue; // w przypadku błędu, kontynuuj działanie serwera
 			}
 
 			char clientIp[INET_ADDRSTRLEN]; // adres IP klienta
@@ -97,7 +97,7 @@ void receiveFile()
 			{
 				std::cerr << "Nieudane odczytanie adresu IPv4 ze struktury sockaddr_in.\n";
 				closesocket(clientDesc);
-				break; // wyjście z głównej pętli serwera
+				continue; // w przypadku błędu, kontynuuj działanie serwera
 			}
 			std::cout << "Polaczono z klientem z IP " << clientIp << ". Nr deskryptora " << clientDesc << "\n";
 
@@ -110,7 +110,7 @@ void receiveFile()
 			{
 				std::cerr << "Nieudane otwarcie pliku " << finalFileName << ".\n";
 				closesocket(clientDesc);
-				break; // wyjście z głównej pętli serwera
+				continue; // w przypadku błędu, kontynuuj działanie serwera
 			}
 
 			fileClients.insert({ clientDesc, fileHandler }); // dodaj właściwość klient-plik do mapę
@@ -127,15 +127,23 @@ void receiveFile()
 			{
 				char buffer[FRAME_BUFF]; // bufor bajtów w rozmiarze ramki
 				int singleFrameSize = recv(i->fd, buffer, FRAME_BUFF, 0);
+				// jeśli nie uda się odczytać ramki, zakończ połączenie z klientem
 				if (singleFrameSize < 0)
 				{
-					std::cerr << "Nieudane odczytanie ramki pliku.\n";
-					break; // wyjście z pętli odczytującej bajty pliku
+					std::cerr << "Nieudane odczytanie ramki pliku. ";
+					std::cout << "Rozlaczono z klientem (nr deskryptora): " << i->fd << "\n";
+					fclose(fileClients.at(i->fd)); // zamknięcie pliku
+					closesocket(i->fd); // zamknięcie socketu
+					fileClients.erase(i->fd); // usuń klienta z mapy klient-plik
+					i = descrs.erase(i); // usuń deskryptor klienta i zwróć iterator
 				}
-				// dopisz do pliku otrzymaną ramkę danych
-				fwrite(buffer, sizeof(char), singleFrameSize, fileClients.at(i->fd));
-				fflush(fileClients.at(i->fd)); // odśwież status pliku
-				++i;
+				else
+				{
+					// w przeciwnym wypadku dopisz do pliku otrzymaną ramkę danych
+					fwrite(buffer, sizeof(char), singleFrameSize, fileClients.at(i->fd));
+					fflush(fileClients.at(i->fd)); // odśwież status pliku
+					++i; // przejdź do kolejnego klienta
+				}
 			}
 			// jeśli klient zakończy połączenie lub błąd
 			else if (i->revents & (POLLHUP | POLLERR))
