@@ -10,11 +10,12 @@ namespace SOCK_NET
 	{
 		private:
 			SOCKET sock = INVALID_SOCKET; // socket klienta (przypisywany w metodzie createConnection())
+			FILE* fileHandler; // uchwyt na plik do wysłania/pobrania
 			const char* address; // adres do nawiązania połączenia
 			const int port; // numer portu do nawiązania połączenia
 
 			std::string inputStream; // ciąg wejściowy nagłówka wprowadzananego przez użytkownika
-			std::string fileName; // nazwa pliku wysyłanego/odbieraneg
+			std::string fileName; // nazwa pliku wysyłanego/odbieranego
 			SOCK_NET::Action action; // typ akcji (wysyłanie/odbieranie)
 
 		public:

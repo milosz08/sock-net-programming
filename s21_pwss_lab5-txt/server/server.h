@@ -5,6 +5,8 @@
 #include <map>
 #include <vector>
 
+#define SHOW_HDR_PARTS 0 // dyrektywa preprocesora, jeśli ustawiona na 0 serwer pokazuje fragmenty nagłówka
+
 namespace SOCK_NET
 {
 	// struktura przechowująca dane połaczonego klienta przechowywane w mapie, której
@@ -15,7 +17,9 @@ namespace SOCK_NET
 		int clNr; // numer klienta (inkrementowana zmienna)
 		SOCK_NET::Action action; // akcja wykonywana przez użytkownika
 		FILE* fileHandler; // uchwyt do pliku klienta
+		std::string fileName; // nazwa pliku
 		std::string header; // pełny header
+		bool headerCollect; // nagłówek został w całości odebrany
 		size_t sendBytesSize; // całkowita ilość wysłanych bajtów
 	};
 
@@ -29,7 +33,7 @@ namespace SOCK_NET
 			const int port; // numer portu serwera
 			std::vector<pollfd> descrs; // wektor deskryptorów socketów (serwer + klienci)
 			std::map<SOCKET, ClientData> clients; // mapa atrybutów klientów
-			int clientsCount = 1; // zmienna identyfikująca liczbę klientów
+			int clientsCount = 0; // zmienna identyfikująca liczbę klientów
 
 		public:
 			Server(); // kontruktor inicjalizujący serwer domyślnymi wartościami
@@ -40,7 +44,7 @@ namespace SOCK_NET
 			void mainLoop(); // główna pętla serwera
 			bool connectWithClient(); // połączenie z klientem i dodanie go do wektora
 			bool readHeader(const SOCKET& cSock, SHORT& cEv); // odczytywanie nagłówka
-			bool sendFileToClient(const SOCKET& cSock); // wysyłanie pliku od klienta
+			bool sendFileToClient(const SOCKET& cSock); // wysyłanie pliku do klienta
 			bool recvFileFromClient(const SOCKET& cSock); // odbieranie pliku od klienta
 			std::vector<pollfd>::iterator disconnectWithClient(std::vector<pollfd>::iterator& it); // rozłączenie z klientem
 			void logDetails(const std::string& type, const std::string& mess, // drukowanie informacji

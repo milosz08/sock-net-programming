@@ -1,8 +1,9 @@
-﻿#include "lib.h";
+﻿// biblioteka - implementacja klasy
+#include "lib.h";
 
-const std::string SOCK_NET::Lib::DELIMITER = "|";
-const std::string SOCK_NET::Lib::SEND_INDC = ">";
-const std::string SOCK_NET::Lib::FILE_SEP = "_";
+const char SOCK_NET::Lib::DELIMITER = '|';
+const char SOCK_NET::Lib::SEND_INDC = '\n';
+const char SOCK_NET::Lib::FILE_SEP = '_';
 
 bool SOCK_NET::Lib::startWinsock()
 {
@@ -17,11 +18,11 @@ bool SOCK_NET::Lib::startWinsock()
 	if (LOBYTE(this->wsaData.wVersion) != 2 || HIBYTE(this->wsaData.wVersion) != 2)
 	{
 		std::cerr << "[ERROR::LIB]\tNie znaleziono wymaganej wersji biblioteki WinSock.\n";
-		this->closeWinsock();
+		this->closeWinsock(); // zwolnij zasoby
 		return false;
 	}
 	std::cout << "[INFO::LIB]\tInicjalizacja biblioteki WinSock 2.2 zakonczona pomyslnie.\n";
-	return true;
+	return true; // jeśli wszystko ok, zwróć true
 }
 
 SOCK_NET::Lib::~Lib()

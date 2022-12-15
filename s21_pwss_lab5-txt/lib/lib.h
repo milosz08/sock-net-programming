@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// biblioteka - sygnatura klasy
+#pragma once
 
 // definicja stałej odpowiadającej za wykluczenie niektórych interfejsów Win32API
 #ifndef WIN32_LEAN_AND_MEAN
@@ -34,20 +35,19 @@ namespace SOCK_NET
 			WSADATA wsaData; // struktura wsaData
 			WORD reqVersion = MAKEWORD(2, 2); // wymagana wersja WinSock
 
-			const char* address = "127.0.0.1"; // adres serwera
+			const char* address = "192.168.0.202"; // adres serwera
 			const int port = 6969; // port serwera
 
 		public:
-			static const int MAX_BUFF = 1; // maksymalny bufor na nagłówek
+			static const int MAX_BUFF = 10; // maksymalny bufor na nagłówek
 			static const int FRAME_BUFF = 1024; // bufor na dane (odczyt/zapis pliku)
-			static const std::string DELIMITER; // domyślny delimiter rozdzielający akcję od nazwy pliku
-			static const std::string SEND_INDC; // sekwencja znaków po której następuje wysłanie danych
-			static const std::string FILE_SEP; // separator pliku zapisywanego przez serwer
+			static const char DELIMITER; // domyślny delimiter rozdzielający akcję od nazwy pliku
+			static const char SEND_INDC; // sekwencja znaków po której następuje wysłanie danych
+			static const char FILE_SEP; // separator pliku zapisywanego przez serwer
 
 			~Lib(); // destruktor zwalaniający zasoby biblioteki WinSock
 			bool startWinsock(); // inicjalizacja biblioteki WinSock
 			void closeWinsock(); // zwalnianie zasobów biblioteki WinSock
-			void log(); // funkcja logger wyświetlająca komunikaty serwera/klienta
 
 			const char* getAddress() const; // getter zwracający adres
 			const int getPort() const; // getter zwracający port
