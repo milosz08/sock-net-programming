@@ -6,7 +6,7 @@ SOCK_NET::Server::Server() : address("127.0.0.1"), port(8080)
 {
 }
 
-// konstruktor wpisujący wartości adresu i portu podane podczas instancjacji obiektu
+// konstruktor wpisujący wartości adresu i portu podane podczas tworzenia obiektu
 SOCK_NET::Server::Server(const char* address, const int& port) : address(address), port(port)
 {
 }

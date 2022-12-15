@@ -6,7 +6,7 @@ SOCK_NET::Client::Client() : address("127.0.0.1"), port(8080)
 {
 }
 
-// konstruktor wpisujący wartości adresu i portu podane podczas instancjacji obiektu
+// konstruktor wpisujący wartości adresu i portu podane podczas tworzenia obiektu
 SOCK_NET::Client::Client(const char* address, const int& port) : address(address), port(port)
 {
 }
