@@ -9,7 +9,7 @@ namespace SOCK_NET
 	class Client
 	{
 		private:
-			SOCKET sock = INVALID_SOCKET; // socket klienta (przypisywany w metodzie makeConnection())
+			SOCKET sock = INVALID_SOCKET; // socket klienta (przypisywany w metodzie createConnection())
 			const char* address; // adres do nawiązania połączenia
 			const int port; // numer portu do nawiązania połączenia
 
