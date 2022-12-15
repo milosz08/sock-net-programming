@@ -265,7 +265,8 @@ bool SOCK_NET::Server::sendFileToClient(const SOCKET& cSock)
 		}
 		sendData += sendRes; // dodaj ilość już wysłanych bajtów
 		remainingData -= sendRes; // odejmij ilość pozostałych bajtów do wysłania
-	} while (remainingData > 0); // wysyłaj dane, dopóki pozostaną jakieś dane do wysłania
+	}
+	while (remainingData > 0); // wysyłaj dane, dopóki pozostaną jakieś dane do wysłania
 	return true;
 }
 

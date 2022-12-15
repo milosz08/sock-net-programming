@@ -111,7 +111,8 @@ bool SOCK_NET::Client::sendHeader()
 		}
 		sendData += sendRes; // dodaj ilość już wysłanych bajtów
 		remainingData -= sendRes; // odejmij ilość pozostałych bajtów do wysłania
-	} while (remainingData > 0); // wysyłaj dane, dopóki send będzie zwracał wartości większe od 0
+	}
+	while (remainingData > 0); // wysyłaj dane, dopóki send będzie zwracał wartości większe od 0
 	// usuń z nagłówka znak informujący o jego końcu
 	const std::string withoutEOL = this->inputStream.substr(0, this->inputStream.size() - 1);
 	std::cout << "[INFO::CLIENT]\tWyslano do serwera naglowek: '" << withoutEOL << "'.\n";
@@ -152,7 +153,8 @@ void SOCK_NET::Client::sendFile()
 			}
 			sendData += sendRes; // dodaj ilość już wysłanych bajtów
 			remainingData -= sendRes; // odejmij ilość pozostałych bajtów do wysłania
-		} while (remainingData > 0); // wysyłaj dane, dopóki send będzie zwracał wartości większe od 0
+		}
+		while (remainingData > 0); // wysyłaj dane, dopóki send będzie zwracał wartości większe od 0
 		// wyświetl procent wysłania danych przez klienta
 		float percentage = ((++frames * SOCK_NET::Lib::FRAME_BUFF) / (float)fileFullSize) * 100;
 		std::cout << "\r[INFO::CLIENT]\tWysylanie w toku... " << (int)percentage << "%" << std::flush;
