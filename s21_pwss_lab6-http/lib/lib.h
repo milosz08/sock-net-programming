@@ -47,6 +47,7 @@ namespace SOCK_NET
 			explicit Lib(const Lib&) = delete; // usunięcie konstruktora kopiującego
 			explicit Lib(Lib&&) = delete; // usunięcie konstruktora przenoszącego
 			explicit Lib(); // konstruktor domyślny bezparametrowy
+			virtual ~Lib(); // wirtualny destruktor
 
 			bool startWinsock(); // inicjalizacja biblioteki WinSock
 			void closeWinsock(); // zwolnienie zasobów WinSock

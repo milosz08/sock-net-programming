@@ -5,6 +5,10 @@ SOCK_NET::Lib::Lib() : address("127.0.0.1"), port(8080)
 {
 }
 
+SOCK_NET::Lib::~Lib()
+{
+}
+
 bool SOCK_NET::Lib::startWinsock()
 {
 	// inicjalizacja biblioteki WinSock, jeśli nie zdoła zainicjalizować, error w konsoli i 
