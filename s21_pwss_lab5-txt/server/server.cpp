@@ -13,6 +13,11 @@ SOCK_NET::Server::Server(const char* address, const int& port) : address(address
 
 SOCK_NET::Server::~Server()
 {
+	this->closeAllConnections();
+}
+
+void SOCK_NET::Server::closeAllConnections()
+{
 	// zamknij wszystkie gniazda klientów i serwera
 	for (auto it = this->descrs.begin(); it != this->descrs.end(); it++)
 	{
@@ -33,10 +38,10 @@ bool SOCK_NET::Server::initialize()
 	// zwróci wartość -1 i zostanie wyświetlony error w konsoli i zwróci false
 	if ((this->sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
 	{
-		std::cerr << "[ERROR::SERVER]\tNieudane utworzenie socketu.\n";
+		Lib::log(ERROR_L, __FILE__, __LINE__, "Nieudane utworzenie socketu.");
 		return false;
 	}
-	std::cout << "[INFO::SERVER]\tPomyslne utworzenie socketu.\n";
+	Lib::log(INFO_L, __FILE__, __LINE__, "Pomyslne utworzenie socketu.");
 
 	sa.sin_family = AF_INET; // typ adresu IP serwera (IPv4)
 	sa.sin_port = htons(this->port); // port serwera
@@ -45,27 +50,28 @@ bool SOCK_NET::Server::initialize()
 	// zapis w postaci tablicy znaków na sieciową kolejność bajtów
 	if (inet_pton(AF_INET, this->address, &(sa.sin_addr)) < 0)
 	{
-		std::cerr << "[ERROR::SERVER]\tNieudane przypisanie IPv4 do struktury.\n";
+		Lib::log(ERROR_L, __FILE__, __LINE__, "Nieudane przypisanie IPv4 do struktury.");
 		return false;
 	}
 
 	// przypisanie struktury do socketu, jeśli zwróci -1 błąd i zwrócenie false
 	if (bind(this->sock, (struct sockaddr*)&sa, sizeof(sa)) < 0)
 	{
-		std::cerr << "[ERROR::SERVER]\tNieudane powiazanie socketu ze struktura.\n";
+		Lib::log(ERROR_L, __FILE__, __LINE__, "Nieudane powiazanie socketu ze struktura.");
 		return false;
 	}
-	std::cout << "[INFO::SERVER]\tPowiazanie socketu ze struktura sockaddr_in.\n";
+	Lib::log(INFO_L, __FILE__, __LINE__, "Powiazanie socketu ze struktura sockaddr_in.");
 
 	// przełączenie socketu w tryb nasłuchiwania połączeń przychodzących poprzez
 	// funkcję accept(), jeśli błąd zwróci -1 i zwróci wartość false
 	if (listen(this->sock, SOMAXCONN) < 0)
 	{
-		std::cerr << "[ERROR::SERVER]\tNieudane uruchomienie serwera w trybie nasluchu.\n";
+		Lib::log(ERROR_L, __FILE__, __LINE__, "Nieudane uruchomienie serwera w trybie nasluchu.");
 		return false;
 	}
-	std::cout << "[INFO::SERVER]\tSerwer " << this->address << " slucha na porcie ";
-	std::cout << this->port << "...\n";
+
+	Lib::log(INFO_L, __FILE__, __LINE__, "Serwer z IP " + std::string(this->address) + " slucha na porcie " 
+		+ std::to_string(this->port) + "...");
 	// dodanie do wektora struktry reprezentującej serwer
 	this->descrs.push_back({ this->sock, POLLIN, 0 });
 	return true; // jeśli wszystko ok, zwróć true i uruchom główną pętlę serwera
@@ -78,7 +84,7 @@ void SOCK_NET::Server::mainLoop()
 		// tworzenie puli klientów (wraz z serwerem), jeśli nie uda się zwróci błąd i zakończy działanie pęli
 		if (WSAPoll(this->descrs.data(), descrs.size(), -1) < 0)
 		{
-			std::cerr << "[ERROR::SERVER]\tNieudane uruchomienie funkcji WSAPoll.\n";
+			Lib::log(ERROR_L, __FILE__, __LINE__, "Nieudane uruchomienie funkcji WSAPoll.");
 			break; // wyjdź z pętli
 		}
 		pollfd& serv = this->descrs.front(); // weź pierwszy element wektora (deskryptor serwera)
@@ -87,8 +93,8 @@ void SOCK_NET::Server::mainLoop()
 			// spróbuj połączyć z klientem, jeśli się nie uda przejdź do kolejnego klienta
 			if (!this->connectWithClient())
 			{
-				std::cerr << "[ERROR::SERVER]\tNieudane polaczenie z klientem.\n";
-				std::cerr << "[INFO::SERVER]\tPrzejście do nastepnego klienta.\n";
+				Lib::log(ERROR_L, __FILE__, __LINE__, "Nieudane polaczenie z klientem.");
+				Lib::log(INFO_L, __FILE__, __LINE__, "Przejście do nastepnego klienta.");
 			}
 		}
 		// iterator od 2 elementu wektora (pomijanie serwera)
@@ -149,18 +155,12 @@ bool SOCK_NET::Server::connectWithClient()
 		return false; // zwróć false, co spowoduje przejście do kolejnego klienta
 	}
 	this->descrs.push_back({ cSock, POLLIN, 0 }); // dodaj nowego klienta do wektora
-	ClientData cData = {
-		clientIp, // ip klienta
-		++clientsCount, // licznik (numer klienta) pre-inkrementacja, najpierw inkrementuje później wpisuje
-		SOCK_NET::Action::HEADER, // akcja klienta (domyślnie przy połączeniu, oczekiwanie na nagłówek)
-		nullptr, // uchwyt do pliku klienta (przypisywany później)
-		"", // nazwa pliku (początkowo pusta)
-		"", // nagłówek (początkowo pusty)
-		false, // stan odebrania headera
-		0, // całkowita ilość wysłanych danych do klienta
-	};
+	
+	ClientData cData; // stworzenie struktury atrybutów klienta
+	cData.address = clientIp;
+	cData.clNr = ++this->clientsCount;
 	this->clients.insert({ cSock, cData }); // dodaj atrybuty nowego klienta
-	this->logDetails("INFO", "Udane polaczenie z klientem i dodanie do listy.", cSock, cData);
+	this->logDetails(INFO_L, "Udane polaczenie z klientem i dodanie do listy.", cSock, cData, __FILE__, __LINE__);
 	return true; // jeśli wszystko ok, zwróć true
 }
 
@@ -170,25 +170,26 @@ bool SOCK_NET::Server::readHeader(const SOCKET& cSock, SHORT& cEv)
 	if (!currClient.headerCollect) // jeśli nie zebrano jeszcze całego nagłówka
 	{
 		size_t recvSize; // faktyczny rozmiar otrzymanych elementów nagłówka
-		char buffer[SOCK_NET::Lib::MAX_BUFF]; // bufor na dane nagłówka
+		char buffer[MAX_BUFF]; // bufor na dane nagłówka
 		// pobierz dane nagłówka i umieść w buforze, jeśli zwróci -1 to błąd i zwróć false, w celu rozłączenia
-		if ((recvSize = recv(cSock, buffer, SOCK_NET::Lib::MAX_BUFF, 0)) < 0)
+		if ((recvSize = recv(cSock, buffer, MAX_BUFF, 0)) < 0)
 		{
-			this->logDetails("ERROR", "Nieudane odczytanie ramki od klienta.", cSock, currClient);
+			this->logDetails(ERROR_L, "Nieudane odczytanie ramki od klienta.", cSock, currClient, __FILE__, __LINE__);
 			return false;
 		}
 		// dodawanie odczytanych fragmentów do ciągu znaków nagłówka
 		for (int i = 0; i < recvSize; i++)
 		{
-			if (buffer[i] != SOCK_NET::Lib::SEND_INDC && buffer[i] != '\r')
+			if (buffer[i] != SEND_INDC && buffer[i] != '\r')
 			{
 				currClient.header += buffer[i];
 				if (SHOW_HDR_PARTS == 1) // jeśli pokazywanie fragmentów nagłówka jest włączone
-					this->logDetails("INFO", "Kompletowanie naglowka: '" + currClient.header + "'.", cSock, currClient);
+					this->logDetails(INFO_L, "Kompletowanie naglowka: '" + currClient.header + "'.",
+						cSock, currClient, __FILE__, __LINE__);
 			}
 			else
 			{
-				this->logDetails("INFO", "Odczytano naglowek od klienta.", cSock, currClient);
+				this->logDetails(INFO_L, "Odczytano naglowek od klienta.", cSock, currClient, __FILE__, __LINE__);
 				currClient.headerCollect = true; // ustaw flagę na odczytane wszystkie dane
 				break; // wyjdź z pętli
 			}
@@ -198,15 +199,16 @@ bool SOCK_NET::Server::readHeader(const SOCKET& cSock, SHORT& cEv)
 	{
 		if (SHOW_HDR_PARTS == 0) // jeśli pokazywanie fragmentów nagłówka jest wyłączone (pokaż cały nagłówek)
 		{
-			this->logDetails("INFO", "Kompletowanie naglowka: '" + currClient.header + "'.", cSock, currClient);
+			this->logDetails(INFO_L, "Kompletowanie naglowka: '" + currClient.header + "'.",
+				cSock, currClient, __FILE__, __LINE__);
 		}
-		const size_t delimPos = currClient.header.find(SOCK_NET::Lib::DELIMITER); // pozycja delimitera
+		const size_t delimPos = currClient.header.find(DELIMITER); // pozycja delimitera
 		const std::string action = currClient.header.substr(0, delimPos); // typ akcji SEND/RECV
 		const std::string fileName = currClient.header.substr(delimPos + 1, currClient.header.size()); // nazwa pliku
 		// jeśli nie znaleziono delimitera, rozłącz z klientem i zwróć false co spowoduje przejście do kolejnego
 		if (delimPos == std::string::npos)
 		{
-			this->logDetails("ERROR", "Brak delimitera w parametrach naglowka.", cSock, currClient);
+			this->logDetails(ERROR_L, "Brak delimitera w parametrach naglowka.", cSock, currClient, __FILE__, __LINE__);
 			return false; // w przypadku błędu zwróć false
 		}
 		// sprawdzenie pierwszej części nagłówka, jeśli jest to SEND przejdź do odbierania danych od klienta
@@ -214,40 +216,41 @@ bool SOCK_NET::Server::readHeader(const SOCKET& cSock, SHORT& cEv)
 		if (_strcmpi(action.c_str(), "SEND") == 0)
 		{
 			// nazwa wynikowa pliku składająca się z IP_KLIENTA_NR_NAZWAPLIKU
-			std::string finalFileName = currClient.address + SOCK_NET::Lib::FILE_SEP +
-				std::to_string(currClient.clNr) + SOCK_NET::Lib::FILE_SEP + fileName;
+			std::string finalFileName = currClient.address + FILE_SEP + std::to_string(currClient.clNr) + FILE_SEP + fileName;
 
 			FILE* fileHandler = fopen(finalFileName.c_str(), "wb"); // utwórz handler z podaną nazwą pliku do zapisu
 			if (fileHandler == nullptr) // jeśli nie udało się utworzyć pliku
 			{
-				this->logDetails("ERROR", "Nieudane utworzenie pliku.", cSock, currClient);
+				this->logDetails(ERROR_L, "Nieudane utworzenie pliku.", cSock, currClient, __FILE__, __LINE__);
 				return false; // w przypadku błędu zwróć false
 			}
 			currClient.fileHandler = fileHandler; // przypisanie uchwytu do struktry klienta
 			currClient.fileName = finalFileName; // przypisanie nazwy pliku do struktury klienta
-			this->logDetails("INFO", "Plik '" + finalFileName + "' zostal utworzony.", cSock, currClient);
+			this->logDetails(INFO_L, "Plik '" + finalFileName + "' zostal utworzony.", cSock, currClient, __FILE__, __LINE__);
 
 			currClient.action = SOCK_NET::Action::SEND; // ustaw flagę na odbieranie danych od klienta
-			this->logDetails("INFO", "Przelaczenie trybu serwera na tryb SEND.", cSock, currClient);
+			this->logDetails(INFO_L, "Przelaczenie trybu serwera na tryb SEND.", cSock, currClient, __FILE__, __LINE__);
 		}
 		else if (_strcmpi(action.c_str(), "RECV") == 0) // w przeciwnym wypadku przejdź do wysyłania danych
 		{
 			FILE* fileHandler = fopen(fileName.c_str(), "rb"); // utwórz handler z podaną nazwą pliku do odczytu
 			if (fileHandler == nullptr) // jeśli nie udało się otworzyć pliku
 			{
-				this->logDetails("INFO", "Proba odwolania sie do nieistniejacego pliku.", cSock, currClient);
+				this->logDetails(INFO_L, "Proba odwolania sie do nieistniejacego pliku.",
+					cSock, currClient, __FILE__, __LINE__);
 				return false; // w przypadku błędu zwróć false
 			}
 			currClient.fileHandler = fileHandler; // przypisanie uchwytu do struktry klienta		
 			currClient.fileName = fileName; // przypisanie nazwy pliku do struktury klienta
 			currClient.action = SOCK_NET::Action::RECV; // ustaw flagę na wysyłanie danych
 			cEv |= POLLOUT; // gotowość wysyłania danych do klienta z serwera
-			this->logDetails("INFO", "Przelaczenie trybu serwera na tryb RECV.", cSock, currClient);
+			this->logDetails(INFO_L, "Przelaczenie trybu serwera na tryb RECV.",
+				cSock, currClient, __FILE__, __LINE__);
 		}
 		else // jeśli klient nie podał w nagłówku SEND albo RECV
 		{
-			this->logDetails("ERROR", "Proba wyslania naglowka bez wlasciwych parametrow akcji.",
-				cSock, currClient);
+			this->logDetails(ERROR_L, "Proba wyslania naglowka bez wlasciwych parametrow akcji.",
+				cSock, currClient, __FILE__, __LINE__);
 			return false; // w przypadku błędu zwróć false
 		}
 	}
@@ -257,16 +260,16 @@ bool SOCK_NET::Server::readHeader(const SOCKET& cSock, SHORT& cEv)
 bool SOCK_NET::Server::sendFileToClient(const SOCKET& cSock)
 {
 	ClientData& currClient = this->clients[cSock]; // obsługiwany klient
-	char buffer[SOCK_NET::Lib::FRAME_BUFF]; // bufor na wysyłane dane
+	char buffer[FRAME_BUFF]; // bufor na wysyłane dane
 
 	// odczytaj jedną ramkę pliku i zwróć faktycznie odczytaną ilość bajtów
-	size_t singleFrameFileSize = fread(buffer, 1, SOCK_NET::Lib::FRAME_BUFF, currClient.fileHandler);
+	size_t singleFrameFileSize = fread(buffer, 1, FRAME_BUFF, currClient.fileHandler);
 	currClient.sendBytesSize += singleFrameFileSize;
 	// jeśli nie odczytano nic, zakończ połączenie z klientem
 	if (singleFrameFileSize == 0)
 	{
-		this->logDetails("INFO", "Wyslano " + std::to_string(currClient.sendBytesSize)
-			+ " bajtow danych do klienta.", cSock, currClient);
+		this->logDetails(INFO_L, "Wyslano " + std::to_string(currClient.sendBytesSize)
+			+ " bajtow danych do klienta.", cSock, currClient, __FILE__, __LINE__);
 		return false;
 	}
 	size_t sendData = 0; // ilość wysłanych bajtów
@@ -277,7 +280,8 @@ bool SOCK_NET::Server::sendFileToClient(const SOCKET& cSock)
 		// wyślij dane do klienta, jeśli błąd wyświetl komunikat i rozłącz z klientem
 		if ((sendRes = send(cSock, (char*)(buffer + sendData), remainingData, 0)) < 0)
 		{
-			this->logDetails("ERROR", "Nieudane wyslanie ramki danych do klienta.", cSock, currClient);
+			this->logDetails(ERROR_L, "Nieudane wyslanie ramki danych do klienta.",
+				cSock, currClient, __FILE__, __LINE__);
 			return false;
 		}
 		sendData += sendRes; // dodaj ilość już wysłanych bajtów
@@ -290,13 +294,13 @@ bool SOCK_NET::Server::sendFileToClient(const SOCKET& cSock)
 bool SOCK_NET::Server::recvFileFromClient(const SOCKET& cSock)
 {
 	ClientData& currClient = this->clients[cSock]; // obsługiwany klient
-	char buffer[SOCK_NET::Lib::FRAME_BUFF]; // bufor bajtów w rozmiarze ramki
+	char buffer[FRAME_BUFF]; // bufor bajtów w rozmiarze ramki
 
-	int recvData = recv(cSock, buffer, SOCK_NET::Lib::FRAME_BUFF, 0); // odbierz dane 
+	int recvData = recv(cSock, buffer, FRAME_BUFF, 0); // odbierz dane 
 	// jeśli nie uda się odczytać ramki, zakończ połączenie z klientem
 	if (recvData < 0)
 	{
-		this->logDetails("ERROR", "Nieudane odczytanie ramki danych.", cSock, currClient);
+		this->logDetails(ERROR_L, "Nieudane odczytanie ramki danych.", cSock, currClient, __FILE__, __LINE__);
 		return false; // zwróć false i zakończ połączenie z obsługiwanym klientem
 	}
 	else if (recvData == 0) return false; // zwróć false i zakończ połączenie z obsługiwanym klientem
@@ -308,7 +312,7 @@ bool SOCK_NET::Server::recvFileFromClient(const SOCKET& cSock)
 
 std::vector<pollfd>::iterator SOCK_NET::Server::disconnectWithClient(std::vector<pollfd>::iterator& it)
 {
-	this->logDetails("INFO", "Rozlaczono z klientem.", it->fd, this->clients[it->fd]);
+	this->logDetails(INFO_L, "Rozlaczono z klientem.", it->fd, this->clients[it->fd], __FILE__, __LINE__);
 	// zamknij plik, jeśli istnieje referencja do niego
 	if (this->clients[it->fd].fileHandler != nullptr) fclose(this->clients[it->fd].fileHandler);
 	closesocket(it->fd); // zamknięcie socketu
@@ -319,10 +323,11 @@ std::vector<pollfd>::iterator SOCK_NET::Server::disconnectWithClient(std::vector
 
 // metoda drukująca na ekran konsoli dane klienta wraz z dodatkowym komunikatem serwera
 void SOCK_NET::Server::logDetails(const std::string& type, const std::string& mess, const SOCKET& cSock,
-	const ClientData& cData) const
+	const ClientData& cData, const std::string file, const int line) const
 {
-	std::cout << "[" << type << "::SERVER]\t[IP: " << cData.address << ", fd: " << cSock
-		<< ", i: " << cData.clNr << "]: " << mess << "\n";
+	std::string clientInfo = "[IP:" + std::string(cData.address) + ", fd: " + std::to_string(cSock)
+		+ ", i: " + std::to_string(cData.clNr) + "]";
+	Lib::log(type, file, line, mess, true, clientInfo);
 }
 
 void SOCK_NET::Server::closeConnection()

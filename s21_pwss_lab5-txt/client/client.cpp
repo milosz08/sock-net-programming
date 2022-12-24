@@ -13,7 +13,7 @@ SOCK_NET::Client::Client(const char* address, const int& port) : address(address
 
 SOCK_NET::Client::~Client()
 {
-	if (this->sock != INVALID_SOCKET) this->closeConnection(); // zamknij połączenie jeśli aktywne
+	this->closeConnection(); // zamknij połączenie jeśli aktywne
 }
 
 bool SOCK_NET::Client::createConnection()
@@ -24,7 +24,7 @@ bool SOCK_NET::Client::createConnection()
 	// zwróci wartość -1 i zostanie wyświetlony error w konsoli i zwróci false
 	if ((this->sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
 	{
-		std::cerr << "[ERROR::CLIENT]\tNieudane utworzenie socketu.\n";
+		Lib::log(ERROR_L, __FILE__, __LINE__, "Nieudane utworzenie socketu.");
 		return false;
 	}
 
@@ -35,41 +35,40 @@ bool SOCK_NET::Client::createConnection()
 	// zapis w postaci tablicy znaków na sieciową kolejność bajtów, jeśli błąd false
 	if (inet_pton(AF_INET, this->address, &(sa.sin_addr)) < 0)
 	{
-		std::cerr << "[ERROR::CLIENT]\tNieudane przypisanie IPv4 do struktury.\n";
+		Lib::log(ERROR_L, __FILE__, __LINE__, "Nieudane przypisanie IPv4 do struktury.");
 		return false;
 	}
 
+	std::string connInfo = std::string(this->address) + ":" + std::to_string(this->port);
 	// zainicjalizuj połączenie z serwerem, jeśli nie uda się zwróci -1 i zakończy oraz zwróci false
 	if (connect(this->sock, (sockaddr*)&sa, sizeof(sa)) < 0)
 	{
-		std::cerr << "[ERROR::CLIENT]\tNieudane polaczenie z serwerem: ";
-		std::cerr << this->address << ":" << this->port << ".\n";
+		Lib::log(ERROR_L, __FILE__, __LINE__, "Nieudane polaczenie z serwerem: " + connInfo + ".");
 		return false;
 	}
-	std::cout << "[INFO::CLIENT]\tNawiazano polaczenie z serwerem: ";
-	std::cout << this->address << ":" << this->port << ".\n";
+	Lib::log(INFO_L, __FILE__, __LINE__, "Nawiazano polaczenie z serwerem: " + connInfo + ".");
 	return true; // jeśli wszystko ok, zwróć true
 }
 
 void SOCK_NET::Client::selectAction()
 {
 	std::string inputStream, action, fileName, mode; // ciąg wejściowy od użytkownika, akcja i nazwa pliku i tryb
-	std::cout << "[INFO::CLIENT]\tWprowadz typ akcji w formacie '(SEND|RECV)" << SOCK_NET::Lib::DELIMITER;
-	std::cout << "FILENAME', gdzie FILENAME to nazwa pliku:\n";
+	Lib::log(INFO_L, __FILE__, __LINE__, "Wprowadz typ akcji w formacie '(SEND|RECV)" + std::to_string(DELIMITER) 
+		+ "FILENAME', gdzie FILENAME to nazwa pliku:");
 	while (true)
 	{
 		std::cout << ">> ";
 		std::cin >> inputStream; // wczytaj ciąg wejściowy
 		// jeśli nie znajdzie delimitera, wyświetl błąd i ponów wpisanie akcji przez użytkownika
-		if (inputStream.find(SOCK_NET::Lib::DELIMITER) == std::string::npos)
+		if (inputStream.find(DELIMITER) == std::string::npos)
 		{
-			std::cerr << "[ERROR::CLIENT]\tNalezy podac dwa parametry rozdzielone delimiterem.\n";
+			Lib::log(ERROR_L, __FILE__, __LINE__, "Nalezy podac dwa parametry rozdzielone delimiterem.");
 			continue;
 		}
 		// rozdziel ciąg wejściowy na podstawie delimitera na akcję
-		action = inputStream.substr(0, inputStream.find(SOCK_NET::Lib::DELIMITER));
+		action = inputStream.substr(0, inputStream.find(DELIMITER));
 		// drugą cześć po delimiterze przypisz do nazwy pliku
-		fileName = inputStream.substr(inputStream.find(SOCK_NET::Lib::DELIMITER) + 1, inputStream.size());
+		fileName = inputStream.substr(inputStream.find(DELIMITER) + 1, inputStream.size());
 		// sprawdź, czy parametr action jest inny niż SEND bądź RECV, jeśli tak error i przejdź na
 		// początek pętli w celu ponownego wprowadzenia danych
 		if (_strcmpi(action.c_str(), "SEND") == 0)
@@ -84,25 +83,25 @@ void SOCK_NET::Client::selectAction()
 		}
 		else
 		{
-			std::cerr << "[ERROR::CLIENT]\tPrawidlowe parametry akcji to 'SEND' lub 'RECV'.\n";
+			Lib::log(ERROR_L, __FILE__, __LINE__, "Prawidlowe parametry akcji to 'SEND' lub 'RECV'.");
 			continue;
 		}
 		if (fileName == "") // sprawdź, czy podawana nazwa nie jest pustym ciągiem znaków
 		{
-			std::cerr << "[ERROR::CLIENT]\tNazwa pliku nie moze byc pustym ciagiem znakow.\n";
+			Lib::log(ERROR_L, __FILE__, __LINE__, "Nazwa pliku nie moze byc pustym ciagiem znakow.");
 			continue;
 		}
 		this->fileHandler = fopen(fileName.c_str(), mode.c_str()); // handler do pliku
 		// jeśli nie znajdzie pliku na podstawie wybranej nazwy lub inny bład przejdź do początku pętli
 		if (this->fileHandler == nullptr)
 		{
-			std::cerr << "[ERROR::CLIENT]\tNieudane otwarcie pliku '" << fileName << "'.\n";
+			Lib::log(ERROR_L, __FILE__, __LINE__, "Nieudane otwarcie pliku '" + fileName + "'.");
 			continue;
 		}
 		break; // jeśli wszystko ok, wyjdź z pętli
 	}
 	this->fileName = fileName; // przypisz nazwę pliku do pól klasy
-	this->inputStream = inputStream + SOCK_NET::Lib::SEND_INDC; // dodaj sekwencję kończącą
+	this->inputStream = inputStream + SEND_INDC; // dodaj sekwencję kończącą
 }
 
 bool SOCK_NET::Client::sendHeader()
@@ -117,7 +116,7 @@ bool SOCK_NET::Client::sendHeader()
 		// wyślij dane z nagłówkiem do serwera, jeśli błąd wyświetl komunikat i zakończ działanie klienta
 		if ((sendRes = send(this->sock, (char*)(this->inputStream.c_str() + sendData), remainingData, 0)) < 0)
 		{
-			std::cerr << "[ERROR::CLIENT]\tNieudane wyslanie naglowka do serwera.\n";
+			Lib::log(ERROR_L, __FILE__, __LINE__, "Nieudane wyslanie naglowka do serwera.");
 			return false;
 		}
 		else
@@ -129,13 +128,13 @@ bool SOCK_NET::Client::sendHeader()
 	while (remainingData > 0); // wysyłaj dane, dopóki send będzie zwracał wartości większe od 0
 	// usuń z nagłówka znak informujący o jego końcu
 	const std::string withoutEOL = this->inputStream.substr(0, this->inputStream.size() - 1);
-	std::cout << "[INFO::CLIENT]\tWyslano do serwera naglowek: '" << withoutEOL << "'.\n";
+	Lib::log(INFO_L , __FILE__, __LINE__, "Wyslano do serwera naglowek: '" + withoutEOL + "'.");
 	return true; // wszystko ok, zwróć true
 }
 
 void SOCK_NET::Client::sendFile()
 {
-	char buffer[SOCK_NET::Lib::FRAME_BUFF]; // bufor na wysyłane dane
+	char buffer[FRAME_BUFF]; // bufor na wysyłane dane
 	fseek(this->fileHandler, 0, SEEK_END); // ustaw pozycję kursora na końcu pliku
 	int fileFullSize = ftell(this->fileHandler); // pobierz ilość bajtów pliku
 	int frames = 0; // ilość wysłanych ramek
@@ -143,12 +142,12 @@ void SOCK_NET::Client::sendFile()
 
 	// pętla iterująca do momentu, kiedy prześle wszystkie bajty (ilość ramek * jej rozmiar) oraz jeśli
 	// zmienna error jest równa false
-	while (((frames * SOCK_NET::Lib::FRAME_BUFF) < fileFullSize) && !error)
+	while (((frames * FRAME_BUFF) < fileFullSize) && !error)
 	{
 		// przesuń pozycję kursora na podstawie pobieranej ramki (ilość pobranych ramek * jej rozmiar),
-		fseek(this->fileHandler, (frames * SOCK_NET::Lib::FRAME_BUFF), SEEK_SET);
+		fseek(this->fileHandler, (frames * FRAME_BUFF), SEEK_SET);
 		// odczytaj jedną ramkę pliku i zwróć faktycznie odczytaną ilość bajtów
-		size_t singleFrameFileSize = fread(buffer, 1, SOCK_NET::Lib::FRAME_BUFF, this->fileHandler);
+		size_t singleFrameFileSize = fread(buffer, 1, FRAME_BUFF, this->fileHandler);
 		size_t sendData = 0; // ilość wysłanych bajtów
 		int sendRes = 0; // ilość wysłanych danych przez send()
 		size_t remainingData = singleFrameFileSize; // ilość pozostałych danych do wysłania
@@ -168,17 +167,20 @@ void SOCK_NET::Client::sendFile()
 		}
 		while (remainingData > 0); // wysyłaj dane, dopóki send będzie zwracał wartości większe od 0
 		// wyświetl procent wysłania danych przez klienta
-		float percentage = ((++frames * SOCK_NET::Lib::FRAME_BUFF) / (float)fileFullSize) * 100;
-		std::cout << "\r[INFO::CLIENT]\tWysylanie w toku... " << (int)percentage << "%" << std::flush;
+		float percentage = ((++frames * FRAME_BUFF) / (float)fileFullSize) * 100;
+		std::cout << "\r";
+		Lib::log(INFO_L, __FILE__, __LINE__, "Wysylanie w toku... " + std::to_string((int)percentage) + "%", false);
+		std::cout << std::flush;
 	}
 	// dodawaj nową linię tylko wtedy, gdy nie ma błędu i gdy pobrano jakieś bajty
 	if (!error || fileFullSize > 0) std::cout << "\n";
 	// jeśli wystąpił error w wysyłaniu danych (np. utracone połączenie z serwerem)
-	if (error) std::cerr << "[ERROR::CLIENT]\tNieudane wyslanie ramki danych do serwera.\n";
+	if (error) Lib::log(ERROR_L, __FILE__, __LINE__, "Nieudane wyslanie ramki danych do serwera.");
 	else
 	{
-		std::cout << "[INFO::CLIENT]\tWyslano " << frames << " ramek, rozmiar " << SOCK_NET::Lib::FRAME_BUFF << " bajtow.\n";
-		std::cout << "[INFO::CLIENT]\tCalkowity rozmiar pliku: " << fileFullSize << " bajtow.\n";
+		Lib::log(INFO_L , __FILE__, __LINE__, "Wyslano " + std::to_string(frames) + " ramek, rozmiar " 
+			+ std::to_string(FRAME_BUFF) + " bajtow.");
+		Lib::log(INFO_L, __FILE__, __LINE__, "Calkowity rozmiar pliku: " + std::to_string(fileFullSize) + " bajtow.");
 	}
 	fclose(this->fileHandler); // zamknięcie pliku
 	this->closeConnection(); // przy wysłaniu wszystkich danych lub jeśli błąd zamknij połączenie
@@ -188,23 +190,26 @@ void SOCK_NET::Client::receiveFile()
 {
 	size_t allRecvData = 0; // ilość odebranych danych przez recv
 	int recvData = 0; // pobrane bajty przez funkcję recv()
-	char buffer[SOCK_NET::Lib::FRAME_BUFF]; // bufor bajtów w rozmiarze ramki
+	char buffer[FRAME_BUFF]; // bufor bajtów w rozmiarze ramki
 	
 	// odczytuj do momentu, gdy recv zwraca bajty
-	while ((recvData = recv(this->sock, buffer, SOCK_NET::Lib::FRAME_BUFF, 0)) > 0)
+	while ((recvData = recv(this->sock, buffer, FRAME_BUFF, 0)) > 0)
 	{
 		fwrite(buffer, sizeof(char), recvData, this->fileHandler); // dopisz zawartość bufora do pliku
 		fflush(this->fileHandler); // odśwież status pliku
 		allRecvData += recvData; // zsumowana ilość pobranych bajtów pliku z serwera
-		std::cout << "\r[INFO::CLIENT]\tPobieranie w toku... " << allRecvData << " bajtow." << std::flush;
+
+		std::cout << "\r";
+		Lib::log(INFO_L, __FILE__, __LINE__, "Pobieranie w toku... " + std::to_string(allRecvData) + "bajtow.", false);
+		std::cout << std::flush;
 	}
 	if (allRecvData > 0) std::cout << "\n"; // dodawaj nową linię tylko wtedy, gdy odbierze jakieś bajty
 	// jeśli nie uda się odczytać ramki zakończ połączenie z serwerem
-	if (recvData < 0) std::cerr << "[ERROR::CLIENT]\tNieudane odebranie ramki danych z serwera.\n";
+	if (recvData < 0) Lib::log(ERROR_L, __FILE__, __LINE__, "Nieudane odebranie ramki danych z serwera.");
 	else
 	{
-		std::cout << "[INFO::CLIENT]\tOdbieranie danych z serwera zakonczone. Pobrano " << allRecvData;
-		std::cout << " bajtow. Rozmiar ramki: " << SOCK_NET::Lib::FRAME_BUFF << " bajtow.\n";
+		Lib::log(INFO_L, __FILE__, __LINE__, "Odbieranie danych z serwera zakonczone. Pobrano " + std::to_string(allRecvData)
+				 + " bajtow. Rozmiar ramki: " + std::to_string(FRAME_BUFF) + " bajtow.");
 	}
 	this->closeConnection(); // przy odebraniu wszystkich danych lub jeśli błąd zamknij połączenie
 	fclose(this->fileHandler); // zamknięcie pliku
@@ -217,7 +222,9 @@ SOCK_NET::Action SOCK_NET::Client::getAction() const
 
 void SOCK_NET::Client::closeConnection()
 {
+	if (this->sock == INVALID_SOCKET) return; // jeśli gniazdo nieaktywne, zakończ działanie metody
 	closesocket(this->sock); // zamknij gniazdo
 	this->sock = INVALID_SOCKET; // ustaw gniazdo na nieaktywne
-	std::cout << "[INFO::CLIENT]\tRozlaczenie z serwerem " << this->address << ":" << this->port << "\n";
+	Lib::log(INFO_L, __FILE__, __LINE__, "Rozlaczenie z serwerem " + std::string(this->address) + ":"
+		+ std::to_string(this->port) + ".");
 }
