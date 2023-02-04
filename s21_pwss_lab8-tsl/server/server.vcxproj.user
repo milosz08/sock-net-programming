@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerEnvironment>PATH=%PATH%;D:\OneDrive\Dokumenty\Dokumenty Studia\Semestr 5\Programowanie w środowisku sieciowym\Source codes\s21_pwss_lab8-tsl\precompiled\CURLJSON\bin</LocalDebuggerEnvironment>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>--address=127.0.0.1 --port=6969 --sslCertPath=milfi21server.crt --sslKeyPath=milfi21server.key --sslCaPath=ca.crt</LocalDebuggerCommandArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerEnvironment>PATH=%PATH%
+$(SolutionDir)precompiled/CURLJSON/bin
+$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>--address=127.0.0.1 --port=6969</LocalDebuggerCommandArguments>
+  </PropertyGroup>
+</Project>
