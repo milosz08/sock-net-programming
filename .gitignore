@@ -1,3 +1,6 @@
 **/.vs/
 **/Debug/
 **/VirtualBox-6.1.4-136177-Win.exe
+**/*.crt
+**/*.key
+**/x64/**
