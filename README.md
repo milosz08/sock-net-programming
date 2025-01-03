@@ -11,7 +11,7 @@ Monorepo for various C++ project created in socket environment.
 |**s21_pwss_lab5-txt** |simple full-duplex file transfer protocol build on top of the TCP            |
 |**s21_pwss_lab6-http**|integrate app with external HTTP weather API                                 |
 |**s21_pwss_lab7-curl**|integrate app with external HTTP weather api using cURL C++ library          |
-|**s21_pwss_lab8-tsl** |secured file transmission using non blocking socket API with TSL certificates|
+|**s21_pwss_lab8-tsl** |secured file transmission using non blocking socket API with TLS certificates|
 
 ## Author
 Created by Miłosz Gilga. If you have any questions about the application send message: personal@miloszgilga.pl.
