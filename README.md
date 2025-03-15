@@ -14,7 +14,7 @@ Monorepo for various C++ project created in socket environment.
 |**s21_pwss_lab8-tsl** |secured file transmission using non blocking socket API with TLS certificates|
 
 ## Author
-Created by Miłosz Gilga. If you have any questions about the application send message: personal@miloszgilga.pl.
+Created by Miłosz Gilga. If you have any questions about the application send message: [miloszgilga@gmail.com](mailto:miloszgilga@gmail.com).
 
 ## License
 This program is on GNU-GPL 3.0 license.
